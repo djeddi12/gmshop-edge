@@ -187,8 +187,10 @@ export class KinguinEcommerceAdapter implements SupplierAdapter {
 				id: encodeSkuId(value.productId, offer.offerId),
 				name: offer.name || value.name,
 				costMinor: decimalToMinor(String(offer.price), this.input.currencyDecimals),
-				stockQuantity: offer.availableQty ?? offer.qty,
-				active: (offer.availableQty ?? offer.qty) > 0 && !offer.isPreorder,
+				stockQuantity: offer.availableTextQty ?? offer.textQty ?? offer.availableQty ?? offer.qty,
+				active:
+					(offer.availableTextQty ?? offer.textQty ?? offer.availableQty ?? offer.qty) > 0 &&
+					!offer.isPreorder,
 			})),
 		};
 	}
