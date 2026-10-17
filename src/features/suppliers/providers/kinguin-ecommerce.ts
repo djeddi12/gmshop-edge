@@ -142,25 +142,40 @@ export class KinguinEcommerceAdapter implements SupplierAdapter {
 		callbackUrl: string;
 		traceId: string;
 	}): Promise<SupplierPurchaseResult> {
-		if (!input.upstreamOrderId) {
-			return { status: "uncertain", upstreamOrderId: null, errorCode: "kinguin_order_id_missing" };
+		let upstreamOrderId = input.upstreamOrderId;
+		if (!upstreamOrderId) {
+			const query = new URLSearchParams({ orderExternalId: input.requestNo, limit: "100" });
+			const lookup = await this.requestWithStatus("GET", `/v1/order?${query.toString()}`);
+			if (lookup.status < 200 || lookup.status >= 300) {
+				return { status: "uncertain", upstreamOrderId: null, errorCode: "kinguin_order_lookup_failed" };
+			}
+			const orders = z.object({
+				results: z.array(z.object({
+					orderId: z.union([z.string(), z.number()]),
+					status: z.string().optional(),
+				})),
+			}).safeParse(lookup.body);
+			if (!orders.success || orders.data.results.length === 0) {
+				return { status: "uncertain", upstreamOrderId: null, errorCode: "kinguin_order_not_found_yet" };
+			}
+			upstreamOrderId = String(orders.data.results[0]!.orderId);
 		}
 		const { status, body } = await this.requestWithStatus(
 			"GET",
-			`/v2/order/${encodeURIComponent(input.upstreamOrderId)}/keys?page=1&limit=100`,
+			`/v2/order/${encodeURIComponent(upstreamOrderId)}/keys?page=1&limit=100`,
 		);
 		if (status < 200 || status >= 300) {
-			return { status: "uncertain", upstreamOrderId: input.upstreamOrderId, errorCode: "kinguin_keys_not_ready" };
+			return { status: "uncertain", upstreamOrderId, errorCode: "kinguin_keys_not_ready" };
 		}
 		const parsed = z.array(z.object({ serial: z.string().min(1) })).max(100).safeParse(body);
 		if (!parsed.success) {
-			return { status: "uncertain", upstreamOrderId: input.upstreamOrderId, errorCode: "kinguin_invalid_keys_response" };
+			return { status: "uncertain", upstreamOrderId, errorCode: "kinguin_invalid_keys_response" };
 		}
 		const cards = parsed.data.map((item) => item.serial.trim()).filter(Boolean);
 		if (cards.length >= input.quantity) {
-			return { status: "supplied", upstreamOrderId: input.upstreamOrderId, cards: cards.slice(0, input.quantity) };
+			return { status: "supplied", upstreamOrderId, cards: cards.slice(0, input.quantity) };
 		}
-		return { status: "processing", upstreamOrderId: input.upstreamOrderId };
+		return { status: "processing", upstreamOrderId };
 	}
 
 	private mapProduct(value: z.infer<typeof productSchema>): SupplierProduct {
