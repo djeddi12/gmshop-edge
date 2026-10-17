@@ -72,6 +72,7 @@ export class KinguinEcommerceAdapter implements SupplierAdapter {
 		updatedAfter?: string;
 		includeInactive?: boolean;
 	}) {
+		this.assertCurrency();
 		const query = new URLSearchParams({
 			page: String(Math.max(1, input.page)),
 			limit: String(Math.min(100, Math.max(1, input.pageSize))),
@@ -89,6 +90,7 @@ export class KinguinEcommerceAdapter implements SupplierAdapter {
 	}
 
 	async getSku(productId: string, skuId: string) {
+		this.assertCurrency();
 		const query = new URLSearchParams({ productId, limit: "100" });
 		const parsed = productPageSchema.parse(
 			await this.request("GET", `/v1/products?${query.toString()}`),
