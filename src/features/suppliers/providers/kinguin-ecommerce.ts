@@ -213,7 +213,7 @@ export class KinguinEcommerceAdapter implements SupplierAdapter {
     const rawBody = value === undefined ? undefined : JSON.stringify(value);
     const result = await supplierFetchJson(
       this.input.fetcher ?? fetch,
-      `${this.input.baseUrl.replace(/\/$/, "")}${path}`,
+      `${this.input.baseUrl.replace(/\/$/, "")}/esa/api${path}`,
       {
         method,
         headers: {
