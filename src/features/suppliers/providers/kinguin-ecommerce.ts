@@ -28,7 +28,9 @@ const productSchema = z.object({
 	updatedAt: z.string().optional(),
 	images: z.object({
 		cover: z.object({ url: z.string().url().optional() }).optional(),
-		screenshots: z.array(z.object({ url: z.string().url().optional() })).optional(),
+		screenshots: z
+			.array(z.object({ url: z.string().url().optional() }))
+			.optional(),
 	}).optional(),
 	offers: z.array(offerSchema).default([]),
 	cheapestOfferId: z.array(z.string()).default([]),
@@ -60,7 +62,10 @@ export class KinguinEcommerceAdapter implements SupplierAdapter {
 		return {
 			siteName: "Kinguin eCommerce API",
 			balance: {
-				amountMinor: decimalToMinor(String(parsed.balance), this.input.currencyDecimals),
+				amountMinor: decimalToMinor(
+					String(parsed.balance),
+					this.input.currencyDecimals,
+				),
 				currency: this.input.currency,
 			},
 		};
@@ -110,8 +115,16 @@ export class KinguinEcommerceAdapter implements SupplierAdapter {
 		traceId: string;
 	}): Promise<SupplierPurchaseResult> {
 		const { productId, offerId } = parseSkuId(input.skuId);
-		if (!Number.isSafeInteger(input.quantity) || input.quantity < 1 || input.quantity > 9) {
-			throw new DomainError("supplier_quantity_not_supported", 400, "Kinguin supports up to 9 items per offer per order");
+		if (
+			!Number.isSafeInteger(input.quantity) ||
+			input.quantity < 1 ||
+			input.quantity > 9
+		) {
+			throw new DomainError(
+				"supplier_quantity_not_supported",
+				400,
+				"Kinguin supports up to 9 items per offer per order",
+			);
 		}
 		const sku = await this.getSku(productId, input.skuId);
 		const price = Number(sku.costMinor) / 100;
@@ -126,12 +139,20 @@ export class KinguinEcommerceAdapter implements SupplierAdapter {
 			orderExternalId: input.requestNo,
 		});
 		if (status !== 201 && status !== 200) {
-			throw new DomainError("supplier_order_rejected", 502, "Kinguin rejected the order");
+			throw new DomainError(
+				"supplier_order_rejected",
+				502,
+				"Kinguin rejected the order",
+			);
 		}
 		const parsed = orderSchema.parse(body);
 		const orderId = parsed.orderId ?? parsed.id;
 		if (orderId == null || String(orderId).length === 0) {
-			return { status: "uncertain", upstreamOrderId: null, errorCode: "kinguin_order_id_missing" };
+			return {
+				status: "uncertain",
+				upstreamOrderId: null,
+				errorCode: "kinguin_order_id_missing",
+			};
 		}
 		return { status: "processing", upstreamOrderId: String(orderId) };
 	}
@@ -146,10 +167,20 @@ export class KinguinEcommerceAdapter implements SupplierAdapter {
 	}): Promise<SupplierPurchaseResult> {
 		let upstreamOrderId = input.upstreamOrderId;
 		if (!upstreamOrderId) {
-			const query = new URLSearchParams({ orderExternalId: input.requestNo, limit: "100" });
-			const lookup = await this.requestWithStatus("GET", `/v1/order?${query.toString()}`);
+			const query = new URLSearchParams({
+				orderExternalId: input.requestNo,
+				limit: "100",
+			});
+			const lookup = await this.requestWithStatus(
+				"GET",
+				`/v1/order?${query.toString()}`,
+			);
 			if (lookup.status < 200 || lookup.status >= 300) {
-				return { status: "uncertain", upstreamOrderId: null, errorCode: "kinguin_order_lookup_failed" };
+				return {
+					status: "uncertain",
+					upstreamOrderId: null,
+					errorCode: "kinguin_order_lookup_failed",
+				};
 			}
 			const orders = z.object({
 				results: z.array(z.object({
@@ -159,7 +190,11 @@ export class KinguinEcommerceAdapter implements SupplierAdapter {
 			}).safeParse(lookup.body);
 			const firstOrder = orders.success ? orders.data.results[0] : undefined;
 			if (!firstOrder) {
-				return { status: "uncertain", upstreamOrderId: null, errorCode: "kinguin_order_not_found_yet" };
+				return {
+					status: "uncertain",
+					upstreamOrderId: null,
+					errorCode: "kinguin_order_not_found_yet",
+				};
 			}
 			upstreamOrderId = String(firstOrder.orderId);
 		}
@@ -168,15 +203,30 @@ export class KinguinEcommerceAdapter implements SupplierAdapter {
 			`/v2/order/${encodeURIComponent(upstreamOrderId)}/keys?page=1&limit=100`,
 		);
 		if (status < 200 || status >= 300) {
-			return { status: "uncertain", upstreamOrderId, errorCode: "kinguin_keys_not_ready" };
+			return {
+				status: "uncertain",
+				upstreamOrderId,
+				errorCode: "kinguin_keys_not_ready",
+			};
 		}
-		const parsed = z.array(z.object({ serial: z.string().min(1) })).max(100).safeParse(body);
+		const parsed = z
+			.array(z.object({ serial: z.string().min(1) }))
+			.max(100)
+			.safeParse(body);
 		if (!parsed.success) {
-			return { status: "uncertain", upstreamOrderId, errorCode: "kinguin_invalid_keys_response" };
+			return {
+				status: "uncertain",
+				upstreamOrderId,
+				errorCode: "kinguin_invalid_keys_response",
+			};
 		}
 		const cards = parsed.data.map((item) => item.serial.trim()).filter(Boolean);
 		if (cards.length >= input.quantity) {
-			return { status: "supplied", upstreamOrderId, cards: cards.slice(0, input.quantity) };
+			return {
+				status: "supplied",
+				upstreamOrderId,
+				cards: cards.slice(0, input.quantity),
+			};
 		}
 		return { status: "processing", upstreamOrderId };
 	}
@@ -198,24 +248,42 @@ export class KinguinEcommerceAdapter implements SupplierAdapter {
 			name: value.name,
 			description: value.description,
 			imageUrls: value.images?.cover?.url ? [value.images.cover.url] : [],
-			categoryNames: [...(value.platform ? [value.platform] : []), ...value.genres, ...value.tags].slice(0, 100),
+			categoryNames: [
+				...(value.platform ? [value.platform] : []),
+				...value.genres,
+				...value.tags,
+			].slice(0, 100),
 			active: value.qty > 0 && offers.length > 0,
 			...(value.updatedAt ? { updatedAt: value.updatedAt } : {}),
 			skus: offers.map((offer): SupplierSku => ({
 				id: encodeSkuId(value.productId, offer.offerId),
 				name: offer.name || value.name,
 				costMinor: decimalToMinor(String(offer.price), this.input.currencyDecimals),
-				stockQuantity: offer.availableTextQty ?? offer.textQty ?? offer.availableQty ?? offer.qty,
+				stockQuantity:
+					offer.availableTextQty ??
+					offer.textQty ??
+					offer.availableQty ??
+					offer.qty,
 				active:
-					(offer.availableTextQty ?? offer.textQty ?? offer.availableQty ?? offer.qty) > 0 &&
+					(offer.availableTextQty ??
+						offer.textQty ??
+						offer.availableQty ??
+						offer.qty) > 0 &&
 					!offer.isPreorder,
 			})),
 		};
 	}
 
 	private assertCurrency() {
-		if (this.input.currency.toUpperCase() !== "EUR" || this.input.currencyDecimals !== 2) {
-			throw new DomainError("supplier_currency_mismatch", 400, "Kinguin eCommerce API prices and balance are denominated in EUR; configure EUR with 2 decimal places");
+		if (
+			this.input.currency.toUpperCase() !== "EUR" ||
+			this.input.currencyDecimals !== 2
+		) {
+			throw new DomainError(
+				"supplier_currency_mismatch",
+				400,
+				"Kinguin eCommerce API prices and balance are denominated in EUR; configure EUR with 2 decimal places",
+			);
 		}
 	}
 
@@ -223,9 +291,17 @@ export class KinguinEcommerceAdapter implements SupplierAdapter {
 		const result = await this.requestWithStatus(method, path, value);
 		if (result.status < 200 || result.status >= 300) {
 			if (result.status === 401 || result.status === 403) {
-				throw new DomainError("supplier_authentication_failed", 502, "Kinguin API key was rejected");
+				throw new DomainError(
+					"supplier_authentication_failed",
+					502,
+					"Kinguin API key was rejected",
+				);
 			}
-			throw new DomainError("supplier_request_failed", 502, "Kinguin API request failed");
+			throw new DomainError(
+				"supplier_request_failed",
+				502,
+				"Kinguin API request failed",
+			);
 		}
 		return result.body;
 	}
@@ -256,11 +332,22 @@ function encodeSkuId(productId: string, offerId: string) {
 function parseSkuId(value: string) {
 	const separator = value.indexOf("::");
 	if (separator < 1 || separator + 2 >= value.length) {
-		throw new DomainError("supplier_sku_not_found", 404, "Kinguin offer reference is invalid");
+		throw new DomainError(
+			"supplier_sku_not_found",
+			404,
+			"Kinguin offer reference is invalid",
+		);
 	}
-	return { productId: value.slice(0, separator), offerId: value.slice(separator + 2) };
+	return {
+		productId: value.slice(0, separator),
+		offerId: value.slice(separator + 2),
+	};
 }
 
 function notFound() {
-	return new DomainError("supplier_sku_not_found", 404, "Kinguin product or offer was not found");
+	return new DomainError(
+		"supplier_sku_not_found",
+		404,
+		"Kinguin product or offer was not found",
+	);
 }
