@@ -4,6 +4,7 @@ export const supplierProviderSchema = z.enum([
 	"acg",
 	"dujiao_next",
 	"gmshop_edge",
+	"kinguin_ecommerce",
 ]);
 export type SupplierProvider = z.infer<typeof supplierProviderSchema>;
 
@@ -11,6 +12,7 @@ export const supplierProtocolVersions = {
 	acg: "3.5.5-v4",
 	dujiao_next: "1.3.1-upstream-v1",
 	gmshop_edge: "gmshop-edge-upstream-v1",
+	kinguin_ecommerce: "kinguin-esa-v1-v2",
 } as const satisfies Record<SupplierProvider, string>;
 
 const minorAmountSchema = z
@@ -118,6 +120,10 @@ export const gmshopEdgeCredentialsSchema = z.object({
 	apiSecret: z.string().min(32).max(1024),
 });
 
+export const kinguinEcommerceCredentialsSchema = z.object({
+	apiKey: z.string().trim().min(1).max(512),
+});
+
 export const supplierCredentialsSchema = z.discriminatedUnion("provider", [
 	z.object({ provider: z.literal("acg"), credentials: acgCredentialsSchema }),
 	z.object({
@@ -127,6 +133,10 @@ export const supplierCredentialsSchema = z.discriminatedUnion("provider", [
 	z.object({
 		provider: z.literal("gmshop_edge"),
 		credentials: gmshopEdgeCredentialsSchema,
+	}),
+	z.object({
+		provider: z.literal("kinguin_ecommerce"),
+		credentials: kinguinEcommerceCredentialsSchema,
 	}),
 ]);
 

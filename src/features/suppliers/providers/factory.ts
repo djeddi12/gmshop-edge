@@ -2,12 +2,14 @@ import {
 	acgCredentialsSchema,
 	dujiaoNextCredentialsSchema,
 	gmshopEdgeCredentialsSchema,
+	kinguinEcommerceCredentialsSchema,
 	type SupplierProvider,
 } from "../schema";
 import type { SupplierCredentials } from "../secrets";
 import { AcgAdapter } from "./acg";
 import { DujiaoNextAdapter } from "./dujiao-next";
 import { GmshopEdgeAdapter } from "./gmshop-edge";
+import { KinguinEcommerceAdapter } from "./kinguin-ecommerce";
 import type { SupplierAdapter } from "./types";
 
 export function createSupplierAdapter(input: {
@@ -35,6 +37,16 @@ export function createSupplierAdapter(input: {
 			baseUrl: input.baseUrl,
 			apiKey: credentials.apiKey,
 			apiSecret: credentials.apiSecret,
+			currency: input.currency,
+			currencyDecimals: input.currencyDecimals,
+			fetcher: input.fetcher,
+		});
+	}
+	if (input.provider === "kinguin_ecommerce") {
+		const credentials = kinguinEcommerceCredentialsSchema.parse(input.credentials);
+		return new KinguinEcommerceAdapter({
+			baseUrl: input.baseUrl,
+			apiKey: credentials.apiKey,
 			currency: input.currency,
 			currencyDecimals: input.currencyDecimals,
 			fetcher: input.fetcher,

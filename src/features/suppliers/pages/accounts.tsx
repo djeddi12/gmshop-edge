@@ -275,18 +275,19 @@ export function SupplierAccountsPage() {
 								? "acg"
 								: values.provider === "gmshop_edge"
 									? "gmshop_edge"
-									: "dujiao_next";
+									: values.provider === "kinguin_ecommerce"
+										? "kinguin_ecommerce"
+										: "dujiao_next";
 						const credentials =
 							provider === "acg"
 								? values.apiId || values.appKey
 									? { apiId: values.apiId, appKey: values.appKey }
 									: undefined
-								: values.apiKey || values.apiSecret
-									? {
-											apiKey: values.apiKey,
-											apiSecret: values.apiSecret,
-										}
-									: undefined;
+								: provider === "kinguin_ecommerce"
+									? values.apiKey ? { apiKey: values.apiKey } : undefined
+									: values.apiKey || values.apiSecret
+										? { apiKey: values.apiKey, apiSecret: values.apiSecret }
+										: undefined;
 						await saveSupplierAccountFn({
 							data: {
 								id: account?.id,
@@ -416,7 +417,9 @@ function accountFormSchema(editing: boolean) {
 			label: m.supplier_api_key(),
 			tooltip: credentialTooltip,
 			hidden: (values: Record<string, unknown>) =>
-				values.provider !== "dujiao_next" && values.provider !== "gmshop_edge",
+				values.provider !== "dujiao_next" &&
+				values.provider !== "gmshop_edge" &&
+				values.provider !== "kinguin_ecommerce",
 			required: !editing,
 			fieldProps: {
 				autoCapitalize: "none",
@@ -430,7 +433,9 @@ function accountFormSchema(editing: boolean) {
 			valueType: "password" as const,
 			tooltip: credentialTooltip,
 			hidden: (values: Record<string, unknown>) =>
-				values.provider !== "dujiao_next" && values.provider !== "gmshop_edge",
+				values.provider !== "dujiao_next" &&
+				values.provider !== "gmshop_edge" &&
+				values.provider !== "kinguin_ecommerce",
 			required: !editing,
 			fieldProps: {
 				autoComplete: "new-password",
@@ -471,10 +476,10 @@ function minorAmountFieldProps(placeholder: string) {
 
 function accountValues(account: Account | null) {
 	return {
-		provider: account?.provider ?? "dujiao_next",
+		provider: account?.provider ?? "kinguin_ecommerce",
 		name: account?.name ?? "",
-		baseUrl: account?.baseUrl ?? "",
-		currency: account?.currency ?? "CNY",
+		baseUrl: account?.baseUrl ?? "https://gateway.kinguin.net",
+		currency: account?.currency ?? "EUR",
 		currencyDecimals: account?.currencyDecimals ?? 2,
 		apiId: "",
 		appKey: "",

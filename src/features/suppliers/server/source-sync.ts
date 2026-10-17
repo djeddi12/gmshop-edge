@@ -16,7 +16,7 @@ const MAX_CATALOG_PRODUCTS = 10_000;
 
 const cachedCatalogSchema = z.object({
 	version: z.literal(1),
-	provider: z.enum(["acg", "dujiao_next", "gmshop_edge"]),
+	provider: z.enum(["acg", "dujiao_next", "gmshop_edge", "kinguin_ecommerce"]),
 	normalizedApiOrigin: z.string(),
 	protocolVersion: z.string(),
 	syncedAt: z.number().int().nonnegative(),
@@ -201,7 +201,12 @@ async function allProducts(
 	adapter: Awaited<ReturnType<typeof adapterForSupplierAccount>>,
 	updatedAfter?: string | null,
 ) {
-	const pageSize = provider === "acg" ? MAX_CATALOG_PRODUCTS : 50;
+	const pageSize =
+		provider === "acg"
+			? MAX_CATALOG_PRODUCTS
+			: provider === "kinguin_ecommerce"
+				? 100
+				: 50;
 	const products: SupplierProduct[] = [];
 	let page = 1;
 	while (products.length < MAX_CATALOG_PRODUCTS) {
@@ -210,7 +215,9 @@ async function allProducts(
 			pageSize,
 			includeInactive: true,
 			updatedAfter:
-				provider === "dujiao_next" ? (updatedAfter ?? undefined) : undefined,
+				provider === "dujiao_next" || provider === "kinguin_ecommerce"
+					? (updatedAfter ?? undefined)
+					: undefined,
 		});
 		products.push(...result.products);
 		if (

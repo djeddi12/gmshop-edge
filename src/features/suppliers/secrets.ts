@@ -4,6 +4,7 @@ import {
 	acgCredentialsSchema,
 	dujiaoNextCredentialsSchema,
 	gmshopEdgeCredentialsSchema,
+	kinguinEcommerceCredentialsSchema,
 	type SupplierProvider,
 } from "./schema";
 
@@ -11,6 +12,7 @@ const credentialValueSchema = z.union([
 	acgCredentialsSchema,
 	dujiaoNextCredentialsSchema,
 	gmshopEdgeCredentialsSchema,
+	kinguinEcommerceCredentialsSchema,
 ]);
 
 const credentialVaultSchema = z.object({
@@ -36,7 +38,8 @@ export function parseSupplierCredentials(
 	if (provider === "acg") return acgCredentialsSchema.parse(value);
 	if (provider === "dujiao_next")
 		return dujiaoNextCredentialsSchema.parse(value);
-	return gmshopEdgeCredentialsSchema.parse(value);
+	if (provider === "gmshop_edge") return gmshopEdgeCredentialsSchema.parse(value);
+	return kinguinEcommerceCredentialsSchema.parse(value);
 }
 
 export async function createSupplierCredentialVault(
