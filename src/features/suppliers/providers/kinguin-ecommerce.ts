@@ -157,10 +157,11 @@ export class KinguinEcommerceAdapter implements SupplierAdapter {
 					status: z.string().optional(),
 				})),
 			}).safeParse(lookup.body);
-			if (!orders.success || orders.data.results.length === 0) {
+			const firstOrder = orders.success ? orders.data.results[0] : undefined;
+			if (!firstOrder) {
 				return { status: "uncertain", upstreamOrderId: null, errorCode: "kinguin_order_not_found_yet" };
 			}
-			upstreamOrderId = String(orders.data.results[0]!.orderId);
+			upstreamOrderId = String(firstOrder.orderId);
 		}
 		const { status, body } = await this.requestWithStatus(
 			"GET",
