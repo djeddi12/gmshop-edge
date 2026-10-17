@@ -111,6 +111,41 @@ describe("Kinguin eCommerce adapter", () => {
 		});
 	});
 
+	it("looks up uncertain orders by the external request ID without placing a duplicate order", async () => {
+		const urls: string[] = [];
+		const adapter = new KinguinEcommerceAdapter({
+			baseUrl: "https://gateway.kinguin.net",
+			apiKey: "test-api-key",
+			currency: "EUR",
+			currencyDecimals: 2,
+			fetcher: async (input) => {
+				const url = String(input);
+				urls.push(url);
+				if (url.includes("/v1/order?")) {
+					return Response.json({ results: [{ orderId: "RECOVERED123", status: "processing" }], item_count: 1 });
+				}
+				if (url.includes("/v2/order/RECOVERED123/keys")) {
+					return Response.json([{ serial: "RECOVERED-KEY" }]);
+				}
+				return Response.json({ results: [], item_count: 0 });
+			},
+		});
+		await expect(adapter.reconcileOrder({
+			upstreamOrderId: null,
+			skuId: "product-uuid-1::offer-1",
+			quantity: 1,
+			requestNo: "external-order-recovery",
+			callbackUrl: "https://shop.example/callback",
+			traceId: "trace-recovery",
+		})).resolves.toEqual({
+			status: "supplied",
+			upstreamOrderId: "RECOVERED123",
+			cards: ["RECOVERED-KEY"],
+		});
+		expect(urls.some((url) => url.includes("orderExternalId=external-order-recovery"))).toBe(true);
+		expect(urls).toHaveLength(2);
+	});
+
 	it("rejects non-EUR account settings", async () => {
 		const adapter = new KinguinEcommerceAdapter({
 			baseUrl: "https://gateway.kinguin.net",
