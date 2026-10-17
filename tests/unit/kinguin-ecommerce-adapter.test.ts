@@ -93,7 +93,7 @@ describe("Kinguin eCommerce adapter", () => {
     expect(submitted).toEqual({ status: "processing", upstreamOrderId: "ORDER123" });
     const orderRequest = requests.find((request) => request.method === "POST");
     expect(await orderRequest?.json()).toEqual({
-      products: [{ productId: "product-uuid-1", qty: 1, price: 5.79, offerId: "offer-1" }],
+      products: [{ productId: "product-uuid-1", qty: 1, price: 5.79, keyType: "text", offerId: "offer-1" }],
       orderExternalId: "external-order-1",
     });
 
