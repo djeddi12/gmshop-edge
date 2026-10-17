@@ -37,7 +37,9 @@ describe("Kinguin eCommerce adapter", () => {
 			fetcher: async (input, init) => {
 				const request = new Request(input, init);
 				requests.push(request);
-				if (request.url.endsWith("/v1/balance")) return Response.json({ balance: 12.45 });
+				if (request.url.endsWith("/v1/balance")) {
+					return Response.json({ balance: 12.45 });
+				}
 				return Response.json({ results: [product], item_count: 1 });
 			},
 		});
@@ -60,7 +62,9 @@ describe("Kinguin eCommerce adapter", () => {
 			}],
 		});
 		expect(requests[0]?.headers.get("X-Api-Key")).toBe("test-api-key");
-		expect(requests[0]?.url).toBe("https://gateway.kinguin.net/esa/api/v1/balance");
+		expect(requests[0]?.url).toBe(
+			"https://gateway.kinguin.net/esa/api/v1/balance",
+		);
 	});
 
 	it("places an order and reconciles delivery keys", async () => {
@@ -77,7 +81,10 @@ describe("Kinguin eCommerce adapter", () => {
 					return Response.json([{ serial: "AAAA-BBBB-CCCC" }]);
 				}
 				if (request.method === "POST" && request.url.endsWith("/v2/order")) {
-					return new Response(JSON.stringify({ orderId: "ORDER123", status: "processing" }), { status: 201 });
+					return new Response(
+						JSON.stringify({ orderId: "ORDER123", status: "processing" }),
+						{ status: 201 },
+					);
 				}
 				return Response.json({ results: [product], item_count: 1 });
 			},
@@ -90,10 +97,21 @@ describe("Kinguin eCommerce adapter", () => {
 			callbackUrl: "https://shop.example/callback",
 			traceId: "trace-1",
 		});
-		expect(submitted).toEqual({ status: "processing", upstreamOrderId: "ORDER123" });
+		expect(submitted).toEqual({
+			status: "processing",
+			upstreamOrderId: "ORDER123",
+		});
 		const orderRequest = requests.find((request) => request.method === "POST");
 		expect(await orderRequest?.json()).toEqual({
-			products: [{ productId: "product-uuid-1", qty: 1, price: 5.79, keyType: "text", offerId: "offer-1" }],
+			products: [
+				{
+					productId: "product-uuid-1",
+					qty: 1,
+					price: 5.79,
+					keyType: "text",
+					offerId: "offer-1",
+				},
+			],
 			orderExternalId: "external-order-1",
 		});
 
@@ -111,7 +129,9 @@ describe("Kinguin eCommerce adapter", () => {
 		});
 	});
 
-	it("looks up uncertain orders by the external request ID without placing a duplicate order", async () => {
+	it(
+		"looks up uncertain orders by the external request ID without placing a duplicate order",
+		async () => {
 		const urls: string[] = [];
 		const adapter = new KinguinEcommerceAdapter({
 			baseUrl: "https://gateway.kinguin.net",
@@ -122,7 +142,10 @@ describe("Kinguin eCommerce adapter", () => {
 				const url = String(input);
 				urls.push(url);
 				if (url.includes("/v1/order?")) {
-					return Response.json({ results: [{ orderId: "RECOVERED123", status: "processing" }], item_count: 1 });
+					return Response.json({
+						results: [{ orderId: "RECOVERED123", status: "processing" }],
+						item_count: 1,
+					});
 				}
 				if (url.includes("/v2/order/RECOVERED123/keys")) {
 					return Response.json([{ serial: "RECOVERED-KEY" }]);
@@ -142,7 +165,9 @@ describe("Kinguin eCommerce adapter", () => {
 			upstreamOrderId: "RECOVERED123",
 			cards: ["RECOVERED-KEY"],
 		});
-		expect(urls.some((url) => url.includes("orderExternalId=external-order-recovery"))).toBe(true);
+		expect(
+			urls.some((url) => url.includes("orderExternalId=external-order-recovery")),
+		).toBe(true);
 		expect(urls).toHaveLength(2);
 	});
 
