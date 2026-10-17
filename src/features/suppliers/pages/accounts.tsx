@@ -474,7 +474,7 @@ function accountValues(account: Account | null) {
 	return {
 		provider: account?.provider ?? "kinguin_ecommerce",
 		name: account?.name ?? "",
-		baseUrl: account?.baseUrl ?? "https://gateway.kinguin.net/esa/api",
+		baseUrl: account?.baseUrl ?? "https://gateway.kinguin.net",
 		currency: account?.currency ?? "EUR",
 		currencyDecimals: account?.currencyDecimals ?? 2,
 		apiId: "",
