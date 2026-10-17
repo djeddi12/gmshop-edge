@@ -118,6 +118,7 @@ export class KinguinEcommerceAdapter implements SupplierAdapter {
         productId,
         qty: input.quantity,
         price,
+        keyType: "text",
         offerId,
       }],
       orderExternalId: input.requestNo,
