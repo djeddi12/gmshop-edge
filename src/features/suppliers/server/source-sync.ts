@@ -201,7 +201,12 @@ async function allProducts(
 	adapter: Awaited<ReturnType<typeof adapterForSupplierAccount>>,
 	updatedAfter?: string | null,
 ) {
-	const pageSize = provider === "acg" ? MAX_CATALOG_PRODUCTS : provider === "kinguin_ecommerce" ? 100 : 50;
+	const pageSize =
+		provider === "acg"
+			? MAX_CATALOG_PRODUCTS
+			: provider === "kinguin_ecommerce"
+				? 100
+				: 50;
 	const products: SupplierProduct[] = [];
 	let page = 1;
 	while (products.length < MAX_CATALOG_PRODUCTS) {
@@ -210,7 +215,9 @@ async function allProducts(
 			pageSize,
 			includeInactive: true,
 			updatedAfter:
-				provider === "dujiao_next" || provider === "kinguin_ecommerce" ? (updatedAfter ?? undefined) : undefined,
+				provider === "dujiao_next" || provider === "kinguin_ecommerce"
+					? (updatedAfter ?? undefined)
+					: undefined,
 		});
 		products.push(...result.products);
 		if (
