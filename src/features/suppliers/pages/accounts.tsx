@@ -417,7 +417,9 @@ function accountFormSchema(editing: boolean) {
 			label: m.supplier_api_key(),
 			tooltip: credentialTooltip,
 			hidden: (values: Record<string, unknown>) =>
-				values.provider !== "dujiao_next" && values.provider !== "gmshop_edge" && values.provider !== "kinguin_ecommerce",
+				values.provider !== "dujiao_next" &&
+				values.provider !== "gmshop_edge" &&
+				values.provider !== "kinguin_ecommerce",
 			required: !editing,
 			fieldProps: {
 				autoCapitalize: "none",
